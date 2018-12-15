@@ -95,147 +95,147 @@ y
 <tbody>
 <tr>
 <td style="text-align:right;">
-62.41309
+25.541078
 </td>
 <td style="text-align:right;">
-42.762384
+93.37816
 </td>
 <td style="text-align:right;">
-1.296721
+6.313626
 </td>
 <td style="text-align:right;">
-86.611567
+94.21195
 </td>
 <td style="text-align:right;">
-70.34349
+46.74386
 </td>
 <td style="text-align:right;">
-945.97430
+176.85304
 </td>
 <td style="text-align:right;">
-34.79909
+251.25686
 </td>
 <td style="text-align:right;">
-68.36082
+63.99736
 </td>
 <td style="text-align:right;">
--697.166466
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-79.24258
-</td>
-<td style="text-align:right;">
-54.140069
-</td>
-<td style="text-align:right;">
-8.497908
-</td>
-<td style="text-align:right;">
-21.446135
-</td>
-<td style="text-align:right;">
-61.77859
-</td>
-<td style="text-align:right;">
-19.19613
-</td>
-<td style="text-align:right;">
-105.13346
-</td>
-<td style="text-align:right;">
-29.38592
-</td>
-<td style="text-align:right;">
-117.801905
+326.0434
 </td>
 </tr>
 <tr>
 <td style="text-align:right;">
-46.65855
+79.318833
 </td>
 <td style="text-align:right;">
-4.744009
+18.62902
 </td>
 <td style="text-align:right;">
-3.680194
+3.963675
 </td>
 <td style="text-align:right;">
-64.739826
+69.87578
 </td>
 <td style="text-align:right;">
-23.90479
+14.66835
 </td>
 <td style="text-align:right;">
-187.09432
+369.38556
 </td>
 <td style="text-align:right;">
-153.57470
+10.27503
 </td>
 <td style="text-align:right;">
-80.54168
+17.61991
 </td>
 <td style="text-align:right;">
-5.087367
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-13.64139
-</td>
-<td style="text-align:right;">
-16.710437
-</td>
-<td style="text-align:right;">
-1.103387
-</td>
-<td style="text-align:right;">
-5.580461
-</td>
-<td style="text-align:right;">
-72.49235
-</td>
-<td style="text-align:right;">
-656.99190
-</td>
-<td style="text-align:right;">
-219.90552
-</td>
-<td style="text-align:right;">
-77.05089
-</td>
-<td style="text-align:right;">
--467.230773
+-245.5792
 </td>
 </tr>
 <tr>
 <td style="text-align:right;">
-48.98374
+5.602838
 </td>
 <td style="text-align:right;">
-23.543726
+86.17499
 </td>
 <td style="text-align:right;">
-4.206409
+4.958180
 </td>
 <td style="text-align:right;">
-97.985795
+70.02885
 </td>
 <td style="text-align:right;">
-11.90140
+97.43158
 </td>
 <td style="text-align:right;">
-140.47100
+26.45413
 </td>
 <td style="text-align:right;">
-283.64272
+280.29928
 </td>
 <td style="text-align:right;">
-89.70752
+189.22854
 </td>
 <td style="text-align:right;">
-218.493806
+404.8084
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8.266538
+</td>
+<td style="text-align:right;">
+18.82628
+</td>
+<td style="text-align:right;">
+3.132144
+</td>
+<td style="text-align:right;">
+12.13147
+</td>
+<td style="text-align:right;">
+12.14893
+</td>
+<td style="text-align:right;">
+131.04693
+</td>
+<td style="text-align:right;">
+242.19435
+</td>
+<td style="text-align:right;">
+110.46545
+</td>
+<td style="text-align:right;">
+243.6506
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+84.422718
+</td>
+<td style="text-align:right;">
+94.93493
+</td>
+<td style="text-align:right;">
+2.244544
+</td>
+<td style="text-align:right;">
+89.16290
+</td>
+<td style="text-align:right;">
+49.71727
+</td>
+<td style="text-align:right;">
+16.14748
+</td>
+<td style="text-align:right;">
+219.74188
+</td>
+<td style="text-align:right;">
+97.71448
+</td>
+<td style="text-align:right;">
+584.5033
 </td>
 </tr>
 </tbody>
@@ -635,7 +635,7 @@ rmse_res=rmse(obs,preres)
 print("indepdendent test for residual deep network: r2-",r2_res,"rmse:",rmse_res)
 ```
 
-    ## indepdendent test for residual deep network: r2- 0.8021702360177142 rmse: 143.03887778157514
+    ## indepdendent test for residual deep network: r2- 0.8068514591712673 rmse: 138.6084275706671
 
 Call the major class, resAutoencoder from resautonet to obtain the network without residual connection, i.e. regular autoencoder deep network bying setting the argument of inresidual as False (the other arguments are the same):
 
@@ -749,7 +749,7 @@ rmse_nores=rmse(obs,prenores)
 print("indepdendent test for regular autoencoder network: r2-",r2_nores,"rmse:",rmse_nores)
 ```
 
-    ## indepdendent test for regular autoencoder network: r2- 0.7064750797573545 rmse: 174.23314145908725
+    ## indepdendent test for regular autoencoder network: r2- 0.7141947730642652 rmse: 168.6083213133464
 
 Then compare the scatter plots of residual deep network and regular network to see the difference in the distributions of their predictions :
 
@@ -786,10 +786,10 @@ silent=plt.ylabel('Predicted values (residual net)')
 x=[-1100 , 700]
 y=[ -1100, 700]
 connectpoints(x,y,0,1)
-silent=plt.show()
+silent=plt.savefig('figs/simsca.png', bbox_inches='tight')
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![output](figs/simsca.png)
 
 Compare the training curves of RMSE and R<sup>2</sup> of residual deep network to check the difference in convergence and training efficiency:
 
@@ -816,10 +816,10 @@ silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_res,marker='', color='black',
 silent=plt.legend()
 silent=plt.xlabel('b. Epoch')
 silent=plt.ylabel(r'$\mathregular{R^2}$') 
-silent=plt.show()
+silent=plt.savefig('figs/simser.png', bbox_inches='tight')
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![output](figs/simser.png)
 
 Test 2: real PM<sub>2.5</sub> dataset and relevant covariates for the Beijing-Tianjin\_Tangshan area
 ----------------------------------------------------------------------------------------------------
@@ -1485,7 +1485,7 @@ rmse_res=rmse(obs,preres)
 print("indepdendent test:r2-",r2_res,"rmse:",rmse_res)
 ```
 
-    ## indepdendent test:r2- 0.8719494704344333 rmse: 24.656107862834236
+    ## indepdendent test:r2- 0.8560432523621615 rmse: 26.585108124114175
 
 Call the major class, resAutoencoder from resautonet to obtain the network without residual connection, i.e. regular autoencoder deep network bying setting the argument of inresidual as False (the other arguments are the same):
 
@@ -1644,7 +1644,7 @@ rmse_nores=rmse(obs,prenores)
 print("indepdendent test:r2-",r2_nores,"rmse:",rmse_nores)
 ```
 
-    ## indepdendent test:r2- 0.5478169910598751 rmse: 46.33305659212668
+    ## indepdendent test:r2- 0.35821532011996404 rmse: 56.13284971427917
 
 Then compare the scatter plots of residual deep network and regular network to see the difference in the distributions of their predictions :
 
@@ -1671,10 +1671,12 @@ silent=plt.ylabel('Predicted values (residual net)')
 x=[-10 , 800]
 y=[ -10, 800]
 connectpoints(x,y,0,1)
-silent=plt.show()
+silent=plt.savefig('figs/pm25sca.png', bbox_inches='tight')
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-30-1.png) Compare the training curves of RMSE and R<sup>2</sup> of residual deep network to check the difference in convergence and training efficiency:
+![output](figs/pm25sca.png)
+
+Compare the training curves of RMSE and R<sup>2</sup> of residual deep network to check the difference in convergence and training efficiency:
 
 ``` python
 rhDf_nores=pd.DataFrame(fhist_nores.history) 
@@ -1700,10 +1702,10 @@ silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_res,marker='', color='black',
 silent=plt.legend()
 silent=plt.xlabel('b. Epoch')
 silent=plt.ylabel(r'$\mathregular{R^2}$') 
-silent=plt.show()
+silent=plt.savefig('figs/pm25ser.png', bbox_inches='tight')
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-31-1.png)
+![output](figs/pm25ser.png)
 
 Comparison with the independent monitoring data from US embassy in Beijing
 --------------------------------------------------------------------------
