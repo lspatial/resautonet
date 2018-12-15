@@ -1,0 +1,447 @@
+---
+title: "resautonet: A Library of Autoencoder-based Residual Deep Network"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+library(knitr)
+opts_chunk$set('python', engine.path='/usr/bin/python3')
+knitr::knit_engines$set(python = reticulate::eng_python) 
+```
+
+## Construction, use and performance analysis of autoencoder-basd residual deep network
+
+In this architecture,
+
+*  autoencoder is the internal base for a balance connection from the encoding to decoding layers
+*  residual connection is constructed in a nested way and the critical component to improve the training time and stability 
+
+The following left plot shows the network archtecture and the right one shows three options for the topology of residual connections. 
+<img  align="left" src="figs/fig1.png" hspace="2"/>
+
+
+
+## Installation of the package 
+
+ (1) You can directly install this package using the following command for the latest version:
+ 
+          pip install resautonet -U  
+
+ (2) You can also clone the repository and then install:
+ 
+         git clone --recursive https://github.com/lspatial/resautonet.git
+         cd resautonet 
+         pip install ./setup.py install 
+```{python include=FALSE}
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+```
+
+The following code is to import the necessary packages: 
+```{python echo=TRUE}
+import numpy as np
+import numpy.random as nr
+import math
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+import os
+import pandas as pd 
+import keras 
+from keras.callbacks import ModelCheckpoint
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+
+import resautonet 
+```
+## Test 1: the simulated dataset 
+
+The dataset is simulated using the following formula:
+<img  align="center" src="figs/simform.png"  hspace="2"/>
+
+each covariate defined as:
+$$       x_1 \sim U(1,100), x_2 \sim U(0,100), x_3 \sim U(1,10), x_4 \sim U(1,100),  
+       x_5 \sim U(9,100),x_6 \sim U(1,1009),x_7 \sim U(5,300),x_8~U(6 \sim 200) $$
+
+```{python}
+simdata=resautonet.simData()
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(py$simdata[c(1:5),], format = "html")
+```
+
+You can also load the dataset existing in the package for a test: 
+```{python}
+simdata=resautonet.data('sim')
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(py$simdata[c(1:5),], format = "html")
+```
+Then the pandas's data frame is converted into the numpy array for the models:  
+```{python}
+tcol=['x'+str(i) for i in range(1,9)]
+X=simdata[tcol].values 
+y=simdata['y'].values
+y=y.reshape((y.shape[0],1))
+```
+The data is normalized using the tool of standard scaler: 
+```{python}
+scX = preprocessing.StandardScaler().fit(X)
+scy = preprocessing.StandardScaler().fit(y)
+Xn=scX.transform(X)
+yn=scy.transform(y)
+print(np.min(y),np.max(y))
+```
+Then, the dataset's samples are separated into three parts, training, validation and test:
+```{python}
+x_train, x_test, y_train,y_test = train_test_split(Xn,yn,
+                                      test_size=0.2)
+x_train, x_valid, y_train,y_valid = train_test_split(x_train,y_train,
+                                      test_size=0.2)
+print(x_train.shape,x_valid.shape,y_train.shape,y_valid.shape)
+```
+Call the major class,  resAutoencoder from resautonet to obtain the network. 
+Critical network parameters: 
+
+        * nfea: 8 ; 
+        * layernNodes: [32,16,8,4] ;
+        * acts: 'relu';
+        * extranOutput: 1 ;
+        * batchnorm: True ;
+        * reg:  L1 and L2 ;
+        * inresidual: True (residual network);
+        * defact: 'tanh' ;
+        * outputtype: 0, just the target variable to be output. 
+```{python}
+from resautonet.model import r2KAuto,r2K
+#Set the path to save the model's parameters 
+wtPath='/tmp/res_sim_wei.hdf5'
+# Set the check point to check the validation 
+checkpointw=ModelCheckpoint(wtPath, monitor="loss",verbose=0, save_best_only=True, mode="min")
+#Call the model class 
+modelCls = resautonet.model.resAutoencoder(x_train.shape[1], [32,16,8,4],'relu',1,inresidual=True,reg=keras.regularizers.l1_l2(0),
+                          batchnorm=True,outnres=None,defact='linear',outputtype=0)
+#Get the residual autoencoder network 
+resmodel = modelCls.resAutoNet()
+#Show the network model's topology 
+resmodel.summary()
+#Complie the network model 
+resmodel.compile(optimizer="adam", loss= 'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2KAuto,r2K])
+
+```
+
+```{python}
+#Starting to train the model... ... 
+fhist_res=resmodel.fit(x_train, y_train, batch_size=128, epochs=200, verbose=0, shuffle=True,
+           validation_data=(x_valid, y_valid),callbacks=[checkpointw])
+```
+Test the independent dataset using the trained model. RMSE and Rsquared are used as the metrics.
+```{python}
+from resautonet.model import rsquared, rmse 
+resmodel.load_weights(wtPath)
+resmodel.compile(optimizer="adam", loss= 'mean_squared_error',  metrics=['mean_squared_error',r2KAuto,r2K])
+y_test_pred=resmodel.predict(x_test)
+
+obs=scy.inverse_transform(y_test[:,-1])
+preres=scy.inverse_transform(y_test_pred[:,-1])
+
+r2_res=rsquared(obs,preres)
+rmse_res=rmse(obs,preres)
+print("indepdendent test for residual deep network: r2-",r2_res,"rmse:",rmse_res)
+```
+
+Call the major class,  resAutoencoder from resautonet to obtain the network without residual connection, i.e. regular autoencoder deep network bying setting the argument of inresidual as False (the other arguments are the same):  
+```{python}
+wtPath_no='/tmp/nores_sim_wei.hdf5'
+checkpointw=ModelCheckpoint(wtPath, monitor="loss",verbose=0, save_best_only=True, mode="min")
+    
+modelCls =resautonet.model.resAutoencoder(x_train.shape[1], [32,16,8,4],'relu',1,inresidual=False,reg=keras.regularizers.l1_l2(0),
+                          batchnorm=True,outnres=None,defact='linear',outputtype=0)
+noresmodel = modelCls.resAutoNet()
+noresmodel.summary()
+noresmodel.compile(optimizer="adam", loss= 'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2KAuto,r2K])
+```
+```{python}
+#Train the regular network 
+fhist_nores=noresmodel.fit(x_train, y_train, batch_size=64, epochs=200, verbose=0, shuffle=True,
+           validation_data=(x_valid, y_valid),callbacks=[checkpointw])
+```
+```{python}
+noresmodel.load_weights(wtPath_no)
+noresmodel.compile(optimizer="adam", loss= 'mean_squared_error',  metrics=['mean_squared_error',r2KAuto,r2K])
+y_test_pred=noresmodel.predict(x_test)
+
+obs=scy.inverse_transform(y_test[:,-1])
+prenores=scy.inverse_transform(y_test_pred[:,-1])
+
+r2_nores=rsquared(obs,prenores)
+rmse_nores=rmse(obs,prenores)
+print("indepdendent test for regular autoencoder network: r2-",r2_nores,"rmse:",rmse_nores)
+```
+Then compare the scatter plots of residual deep network and regular network to see the difference in the distributions of their predictions : 
+```{python}
+import matplotlib.pyplot as plt
+
+def connectpoints(x,y,p1,p2):
+    x1, x2 = x[p1], x[p2]
+    y1, y2 = y[p1], y[p2]
+    plt.plot([x1,x2],[y1,y2],'k-')
+```
+
+```{python echo=TRUE, message=FALSE, warning=FALSE}
+silent=plt.figure(num=None, figsize=(12,4), dpi=80, facecolor='w', edgecolor='k')
+silent=plt.subplot(121)
+silent=plt.scatter(obs,prenores)
+silent=plt.xlim(-1100,700)
+silent=plt.ylim(-1100,700)
+#plt.axis('equal')
+silent=plt.title("$\mathregular{R^2}$="+str(np.round(r2_nores,2)))
+silent=plt.xlabel("a. Simulated (ground truth) values")
+silent=plt.ylabel('Predicted values (regular net)')
+x=[-1100 , 700]
+y=[ -1100, 700]
+connectpoints(x,y,0,1)
+silent=plt.subplot(122)
+silent=plt.scatter(obs,preres)
+silent=plt.xlim(-1100,700)
+silent=plt.ylim(-1100,700)
+#plt.axis('equal')
+silent=plt.title("$\mathregular{R^2}$="+str(np.round(r2_res,2)))
+silent=plt.xlabel("b. Simulated (ground truth) values")
+silent=plt.ylabel('Predicted values (residual net)')
+x=[-1100 , 700]
+y=[ -1100, 700]
+connectpoints(x,y,0,1)
+silent=plt.show()
+```
+
+
+Compare the training curves of RMSE and R<sup>2</sup>  of residual deep network to check the difference in convergence and training efficiency:  
+```{python echo=TRUE, message=FALSE, warning=FALSE}
+rhDf_nores=pd.DataFrame(fhist_nores.history) 
+rhDf_res=pd.DataFrame(fhist_res.history) 
+rhDf_nores['epoch']=pd.Series(np.arange(1,len(rhDf_nores)+1))
+rhDf_res['epoch']=pd.Series(np.arange(1,len(rhDf_res)+1))
+silent=plt.figure(num=None, figsize=(12,4), dpi=80, facecolor='w', edgecolor='k')
+silent=plt.subplot(121)
+silent=plt.plot( 'epoch', 'mean_squared_error', data=rhDf_nores, marker='', markerfacecolor='blue', markersize=12, color='blue',      
+        linewidth=2,label='Re train')
+silent=plt.plot( 'epoch', 'val_mean_squared_error', data=rhDf_nores, marker='', color='blue', linewidth=2,linestyle='dashed',label="Re validation")
+silent=plt.plot( 'epoch', 'mean_squared_error', data=rhDf_res,marker='', color='black', linewidth=2, label="Res train")
+silent=plt.plot( 'epoch', 'val_mean_squared_error', data=rhDf_res,marker='', color='black', linewidth=2, linestyle='dashed', label="Res validation")
+silent=plt.legend()
+silent=plt.xlabel('a. Epoch')
+silent=plt.ylabel('RMSE')
+silent=plt.subplot(122)
+silent=plt.plot( 'epoch', 'r2KAuto', data=rhDf_nores, marker='', markerfacecolor='blue', markersize=12, color='blue', linewidth=2,label='Re train')
+silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_nores, marker='', color='blue', linewidth=2,linestyle='dashed',label="Re validation")
+silent=plt.plot( 'epoch', 'r2KAuto', data=rhDf_res,marker='', color='black', linewidth=2, label="Res train")
+silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_res,marker='', color='black', linewidth=2, linestyle='dashed', label="Res validation")
+silent=plt.legend()
+silent=plt.xlabel('b. Epoch')
+silent=plt.ylabel(r'$\mathregular{R^2}$') 
+silent=plt.show()
+```
+
+## Test 2: real PM<sub>2.5</sub> dataset and relevant covariates for the Beijing-Tianjin_Tangshan area
+
+This dataset is the real dataset of the 2015 PM<sub>2.5</sub> and the relevant covariates for the Beijing-Tianjin-Tangshan area. It is sampled by the fraction of 0.8 from the  original dataset (stratified by the julian day). 
+
+<img  align="center" src="figs/fig2.png" hspace="2"/> 
+
+
+First, load the dataset as pandas's DataFrame: 
+```{python}
+pm25data=resautonet.data('pm2.5')
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(py$pm25data[c(1:5),], format = "html")
+```
+```{python}
+#Derive the more variables for the coordinates to capture spatial variation: 
+tcols=['lat','lon','ele','prs','tem','rhu','win','aod',
+       'pblh_re','pre_re','o3_re','merra2_re','haod','shaod','jd']
+pm25data['lat2']=pm25data['lat']*pm25data['lat']
+pm25data['lon2']=pm25data['lon']*pm25data['lon']
+pm25data['latlon']=pm25data['lat']*pm25data['lon']
+tcols.extend(['lat2','lon2','latlon'])
+```
+```{python}
+# Data preprocesing, log transformation and normailization: 
+X=pm25data[tcols]
+y=np.log(pm25data['pm25_davg'])
+y=y.reshape((y.shape[0],1))
+scX = preprocessing.StandardScaler().fit(X)
+scy = preprocessing.StandardScaler().fit(y)
+Xn=scX.transform(X)
+yn=scy.transform(y)
+```
+```{python}
+#Split the dataset into the sets of training, validation and test 
+x_train, x_test, y_train,y_test = train_test_split(Xn,yn,
+                                      test_size=0.2,stratify=pm25data['jd'].values)
+x_train, x_valid, y_train,y_valid = train_test_split(x_train,y_train,
+                                      test_size=0.2,stratify=x_train[:,-1])
+print(x_train.shape,x_valid.shape,y_train.shape,y_valid.shape,x_test.shape)
+```
+Call the major class,  resAutoencoder from resautonet to obtain the network. 
+Critical network parameters: 
+
+        * nfea: 18 ; 
+        * layernNodes:[128,96,64,32,16,8] ;
+        * acts: 'relu';
+        * reg: L1 and L2 ;
+        * inresidual: True (residual network);
+        * defact: 'linear' ;
+        * dropout: 0.1 
+        * outputtype: 0, just the target variable to be output. 
+```{python}
+modelCls = resautonet.model.resAutoencoder(x_train.shape[1], [128,96,64,32,16,8],'relu',1,
+        reg=keras.regularizers.l1_l2(0),inresidual=True,outnres=None,dropout=0.1,defact='linear')
+resmodel = modelCls.resAutoNet()
+resmodel.summary()
+resmodel.compile(optimizer="adam", loss= 'mean_squared_error',#'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2K,r2KAuto])
+
+```
+
+```{python}
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau,ModelCheckpoint 
+# Set the file path to save the model's parameters 
+modelFl='/tmp/pm25model_res.wei'
+checkpoint = ModelCheckpoint(modelFl, monitor='loss', verbose=0, save_best_only=True, mode='min',
+                                 save_weights_only=True)
+reduceLROnPlat = ReduceLROnPlateau(monitor='loss', factor=0.1,
+                                       patience=1, verbose=0, mode='min',
+                                       min_delta=0.0001, cooldown=0, min_lr=1e-8)
+early = EarlyStopping(monitor='loss', mode="min", verbose=0,
+                          patience=200)
+
+fhist_res=resmodel.fit(x_train, y_train, batch_size=1000, epochs=100, verbose=0, shuffle=True,
+           validation_data=(x_valid, y_valid),callbacks=[early, checkpoint, reduceLROnPlat])
+
+```
+Test the independent dataset using the trained model. RMSE and Rsquared are used as the metrics.  
+```{python}
+resmodel.load_weights(modelFl)
+resmodel.compile(optimizer="adam", loss= 'mean_squared_error',#'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2K,r2KAuto])
+
+y_test_pred=resmodel.predict(x_test)
+
+obs=np.exp(scy.inverse_transform(y_test[:,-1]))
+preres=np.exp(scy.inverse_transform(y_test_pred[:,-1]))
+
+r2_res=rsquared(obs,preres)
+rmse_res=rmse(obs,preres)
+print("indepdendent test:r2-",r2_res,"rmse:",rmse_res)
+```
+Call the major class, resAutoencoder from resautonet to obtain the network without residual connection, i.e. regular autoencoder deep network bying setting the argument of inresidual as False (the other arguments are the same):
+```{python}
+modelCls =resautonet.model.resAutoencoder(x_train.shape[1], [128,96,64,32,16,8],'relu',1,
+        reg=keras.regularizers.l1_l2(0),inresidual=False,outnres=None,dropout=0.1,defact='linear')
+noresmodel = modelCls.resAutoNet()
+noresmodel.summary()
+noresmodel.compile(optimizer="adam", loss= 'mean_squared_error',#'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2K,r2KAuto])
+```
+Staring to train the model of regular network (no residual connections) :
+```{python}
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau,ModelCheckpoint 
+
+modelFl='/tmp/pm25model_nores.wei'
+checkpoint = ModelCheckpoint(modelFl, monitor='loss', verbose=0, save_best_only=True, mode='min',
+                                 save_weights_only=True)
+reduceLROnPlat = ReduceLROnPlateau(monitor='loss', factor=0.1,
+                                       patience=1, verbose=0, mode='min',
+                                       min_delta=0.0001, cooldown=0, min_lr=1e-8)
+early = EarlyStopping(monitor='loss', mode="min", verbose=0,
+                          patience=200)
+
+fhist_nores=noresmodel.fit(x_train, y_train, batch_size=1000, epochs=100, verbose=0, shuffle=True,
+           validation_data=(x_valid, y_valid),callbacks=[early, checkpoint, reduceLROnPlat])
+```
+Test the independent dataset using the trained model. RMSE and Rsquared are used as the metrics. 
+```{python}
+noresmodel.load_weights(modelFl)
+noresmodel.compile(optimizer="adam", loss= 'mean_squared_error',#'mean_squared_error',#mean_squared_error bce_dice_loss, #jaccard_coef_loss, jaccardent_coef_loss1
+      metrics=['mean_squared_error',r2K,r2KAuto])
+
+y_test_pred=noresmodel.predict(x_test)
+
+obs=np.exp(scy.inverse_transform(y_test[:,-1]))
+prenores=np.exp(scy.inverse_transform(y_test_pred[:,-1]))
+
+r2_nores=rsquared(obs,prenores)
+rmse_nores=rmse(obs,prenores)
+print("indepdendent test:r2-",r2_nores,"rmse:",rmse_nores)
+```
+Then compare the scatter plots of residual deep network and regular network to see the difference in the distributions of their predictions : 
+```{python}
+silent=plt.figure(num=None, figsize=(12,4), dpi=80, facecolor='w', edgecolor='k')
+silent=plt.subplot(121)
+silent=plt.scatter(obs,prenores)
+silent=plt.xlim(-10,800)
+silent=plt.ylim(-10,800)
+silent=plt.title("$\mathregular{R^2}$="+str(np.round(r2_nores,2)))
+silent=plt.xlabel("a. Simulated (ground truth) values")
+silent=plt.ylabel('Predicted values (regular net)')
+x=[-10 , 800]
+y=[ -10, 800]
+connectpoints(x,y,0,1)
+silent=plt.subplot(122)
+silent=plt.scatter(obs,preres)
+silent=plt.xlim(-10,800)
+silent=plt.ylim(-10,800)
+#plt.axis('equal')
+silent=plt.title("$\mathregular{R^2}$="+str(np.round(r2_res,2)))
+silent=plt.xlabel("b. Simulated (ground truth) values")
+silent=plt.ylabel('Predicted values (residual net)')
+x=[-10 , 800]
+y=[ -10, 800]
+connectpoints(x,y,0,1)
+silent=plt.show()
+```
+Compare the training curves of RMSE and R<sup>2</sup>  of residual deep network to check the difference in convergence and training efficiency: 
+```{python}
+rhDf_nores=pd.DataFrame(fhist_nores.history) 
+rhDf_res=pd.DataFrame(fhist_res.history) 
+rhDf_nores['epoch']=pd.Series(np.arange(1,len(rhDf_nores)+1))
+rhDf_res['epoch']=pd.Series(np.arange(1,len(rhDf_res)+1))
+
+silent=plt.figure(num=None, figsize=(12,4), dpi=80, facecolor='w', edgecolor='k')
+silent=plt.subplot(121)
+silent=plt.plot( 'epoch', 'mean_squared_error', data=rhDf_nores, marker='', markerfacecolor='blue', markersize=12, color='blue',        
+          linewidth=2,label='Re train')
+silent=plt.plot( 'epoch', 'val_mean_squared_error', data=rhDf_nores, marker='', color='blue', linewidth=2,linestyle='dashed',label="Re validation")
+silent=plt.plot( 'epoch', 'mean_squared_error', data=rhDf_res,marker='', color='black', linewidth=2, label="Res train")
+silent=plt.plot( 'epoch', 'val_mean_squared_error', data=rhDf_res,marker='', color='black', linewidth=2, linestyle='dashed', label="Res validation")
+silent=plt.legend()
+silent=plt.xlabel('a. Epoch')
+silent=plt.ylabel('Mean_squared_error')
+silent=plt.subplot(122)
+silent=plt.plot( 'epoch', 'r2KAuto', data=rhDf_nores, marker='', markerfacecolor='blue', markersize=12, color='blue', linewidth=2,label='Re train')
+silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_nores, marker='', color='blue', linewidth=2,linestyle='dashed',label="Re validation")
+silent=plt.plot( 'epoch', 'r2KAuto', data=rhDf_res,marker='', color='black', linewidth=2, label="Res train")
+silent=plt.plot( 'epoch', 'val_r2KAuto', data=rhDf_res,marker='', color='black', linewidth=2, linestyle='dashed', label="Res validation")
+silent=plt.legend()
+silent=plt.xlabel('b. Epoch')
+silent=plt.ylabel(r'$\mathregular{R^2}$') 
+silent=plt.show()
+```
+
+## Comparison with the independent monitoring data from US embassy in Beijing
+
+Using the residual deep network, we made the 2015 daily surfaces of PM<sub>2.5</sub> concentrations ($\mu$g/m<sup>3</sup>) (365 surfaces) for  the Beijing-Tianjin_tanshan area and extracted its daily predicted values of 2015 for the monitroing station of air quality of the US embassy in Beijing. We made the comparison between the observed and predicted values.  R<sup>2</sup>=0.97 and RMSE=13.23 $\mu$g/m<sup>3</sup>. We also made the scatter plots and time series of the residuals to observe discernable pattern. The random pattern indicates spatiotemporal variability of PM<sub>2.5</sub> has been captured by our models. The predicted and observed values match each other perfectly. 
+<img  align="center" src="figs/usembassy.png"   hspace="2"/>
+
+
+For this library and its relevant applications, welcome to contact Dr. Lianfa Li. 
+          
+          Email: lspatial@gmail.com
