@@ -1,7 +1,6 @@
 
 import numpy as np
 import keras.backend as K
-from resautonet._metrics import *
 
 def r2K(y_true, y_pred):
     """

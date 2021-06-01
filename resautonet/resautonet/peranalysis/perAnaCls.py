@@ -53,7 +53,8 @@ import numpy as np
 from sklearn import preprocessing
 
 from resautonet.model.resAutoencoder import  resAutoencoder
-from resautonet.model.pmetrics import r2K,r2KAuto,rmse,rsquared
+from resautonet.model import r2K,r2KAuto
+from resautonet.model import  rmse
 
 
 class mulParPerAnalysis:

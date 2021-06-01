@@ -1,10 +1,7 @@
 # Library of Autoencoder-based Residual Deep Network (resautonet)
 
-[![Build Status](https://travis-ci.org/pybind/cmake_example.svg?branch=master)](https://travis-ci.org/pybind/cmake_example)
-[![Build status](https://ci.appveyor.com/api/projects/status/57nnxfm4subeug43/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/cmake-example/branch/master)
-
 The python library of autoencoder based residual deep network (resautonet). 
-Current version just supports the KERAS package of deep learning and 
+Current version (2.0) just supports the KERAS package of deep learning and 
 will extend to the others in the future. 
 
 ## Major modules
@@ -28,20 +25,22 @@ will extend to the others in the future.
 * data: function to access each of two datasets,  
          sim': simulated dataset in the format of Pandas's Data Frame,
          'pm2.5':string, the name for a real dataset of the 2015 PM2.5 
-            and the relevant covariates for the Beijing-Tianjin-Tangshan
-            area. It is sampled by the fraction of 0.8 from the
-           the original dataset (stratified by the julian day).
+         and the relevant covariates for the Beijing-Tianjin-Tangshan
+         area. It is sampled by the fraction of 0.8 from the
+         the original dataset (stratified by the julian day).
          See this function's help for details.  
 * simdata: function to simulate the test dataset,  
          The simulated dataset generated according to the formula:
-             y=x1+x2*np.sqrt(x3)+x4+np.power((x5/500),0.3)-x6+
-                np.sqrt(x7)+x8+noise
+         y=x1+x2*np.sqrt(x3)+x4+np.power((x5/500),0.3)-x6+
+         np.sqrt(x7)+x8+noise
          See this function's help for details.
 
 ## Installation
 
 You can directly install it using the following command for the latest version:
-     pip install resautonet -U  
+```
+pip install resautonet -U
+```
 You can also clone the repository and then install:
 
 ```bash

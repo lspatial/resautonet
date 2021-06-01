@@ -1,7 +1,3 @@
 include README.md LICENSE
 include docs/*.txt
 includ resautonet/data/*.csv
-
-global-include CMakeLists.txt *.cmake
-recursive-include src *
-recursive-include pybind11/include *.h
